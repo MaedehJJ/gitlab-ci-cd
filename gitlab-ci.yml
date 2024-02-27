@@ -1,0 +1,65 @@
+image: martinsumera/gitlab-ci-android
+
+before_script:
+  - export VERSION_CODE=$(grep 'versionCode = ' buildSrc/src/main/java/Release.kt | sed 's/^.*= //')
+  - export VERSION_NAME=$(grep 'versionName = ' buildSrc/src/main/java/Release.kt | sed 's/^.*= "\(.*\)"/\1/')
+
+gradle_setup_container: &gradle_setup_anchor
+  - export GRADLE_USER_HOME=$(pwd)/.gradle
+  - chmod +x ./gradlew
+
+stages:
+  - check
+  - release
+
+.upload_to_slack: &upload_to_slack
+  - |
+    curl \
+    --limit-rate 2M \
+    -F token="${SLACK_CHANNEL_ACCESS_TOKEN}" \
+    -F channels="${SLACK_CHANNEL_ID}" \
+    -F initial_comment=":rocket: Hello team! This is the latest update for branch: $CI_COMMIT_BRANCH :rocket:" \
+    -F file=@"$APK_FILE" \
+    https://slack.com/api/files.upload
+
+cache:
+  key: ${CI_PROJECT_ID}
+  paths:
+    - .gradle/
+    - .gradle/wrapper
+    - .gradle/caches
+
+lint:
+  stage: check
+  script:
+    - *gradle_setup_anchor
+    - ./gradlew  ktlintCheck
+  tags:
+    - "docker"
+  allow_failure: false
+
+# Play Store Build
+playStoreRelease:
+  stage: release
+  script:
+    - *gradle_setup_anchor
+    - BUILD_VERSION_NAME=$VERSION_NAME BUILD_VERSION_CODE=$VERSION_CODE
+    - echo $KEY_STORE_BASE_64 | base64 -di > keystore
+    - export KEYSTORE_FILE=$(pwd)/keystore
+    - ./gradlew assembleProductionRelease
+    - mkdir artifacts
+    - cp "app/build/outputs/apk/production/release/app-production-release.apk" "artifacts/sindibad-playstore-release-$VERSION_NAME.apk"
+    - export APK_FILE="artifacts/sindibad-playstore-release-$VERSION_NAME.apk"
+    - *upload_to_slack
+  artifacts:
+    name: "app-playStore-release"
+    expire_in: 1 day
+    paths:
+      - artifacts
+  tags:
+    - "docker"
+  environment:
+    name: Production
+  when: manual
+  allow_failure: true
+  needs: []
