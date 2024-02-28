@@ -48,8 +48,8 @@ playStoreRelease:
     - export KEYSTORE_FILE=$(pwd)/keystore
     - ./gradlew assembleProductionRelease
     - mkdir artifacts
-    - cp "app/build/outputs/apk/production/release/app-production-release.apk" "artifacts/sindibad-playstore-release-$VERSION_NAME.apk"
-    - export APK_FILE="artifacts/sindibad-playstore-release-$VERSION_NAME.apk"
+    - cp "app/build/outputs/apk/production/release/app-production-release.apk" "artifacts/playstore-release-$VERSION_NAME.apk"
+    - export APK_FILE="artifacts/playstore-release-$VERSION_NAME.apk"
     - *upload_to_slack
   artifacts:
     name: "app-playStore-release"
