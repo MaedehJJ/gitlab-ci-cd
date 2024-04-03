@@ -8,11 +8,7 @@ gradle_setup_container: &gradle_setup_anchor
   - export GRADLE_USER_HOME=$(pwd)/.gradle
   - chmod +x ./gradlew
 
-stages:
-  - check
-  - release
-
-.upload_to_slack: &upload_to_slack
+upload_to_slack: &upload_to_slack
   - |
     curl \
     --limit-rate 2M \
@@ -21,6 +17,10 @@ stages:
     -F initial_comment=":rocket: Hello team! This is the latest update for branch: $CI_COMMIT_BRANCH :rocket:" \
     -F file=@"$APK_FILE" \
     https://slack.com/api/files.upload
+
+stages:
+  - check
+  - release
 
 cache:
   key: ${CI_PROJECT_ID}
